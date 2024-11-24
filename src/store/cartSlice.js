@@ -1,5 +1,17 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+function roundToTwoDecimals(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function subTotal(arrayCart) {
+  return roundToTwoDecimals(
+    arrayCart.reduce((acc, current) => {
+      return acc + current.cartTotal;
+    }, 0)
+  );
+}
+
 const cartSlice = createSlice({
   name: "cart",
   initialState: {
@@ -10,9 +22,8 @@ const cartSlice = createSlice({
   reducers: {
     saveInCartAction: (state, action) => {
       let copyArray = [...state.cart];
-      // 1. Da li imamo product u korpi?
       let findIndex = null;
-      // ovde proveravam da li postoji u korpi?
+
       copyArray.find((item, index) => {
         if (item.id === action.payload.id) {
           findIndex = index;
@@ -20,20 +31,20 @@ const cartSlice = createSlice({
         }
       });
 
-      // 2. dodaj novi proizvod ili uvecaj isti
       if (findIndex === null) {
         copyArray.push({
           ...action.payload,
           count: 1,
-          cartTotal: action.payload.price,
+          cartTotal: roundToTwoDecimals(action.payload.price),
         });
         state.totalProduct++;
-        state.totalPrice += action.payload.price;
+        state.totalPrice = roundToTwoDecimals(
+          state.totalPrice + action.payload.price
+        );
       } else {
         copyArray[findIndex].count++;
       }
 
-      // 3. if statement
       state.cart = copyArray;
     },
     deleteItemCartAction: (state, action) => {
@@ -49,18 +60,18 @@ const cartSlice = createSlice({
 
       if (findIndex !== null) {
         copyArray.splice(findIndex, 1);
-        state.totalPrice--;
         state.totalPrice = subTotal(copyArray);
       }
 
       state.cart = copyArray;
     },
     setPriceHandlerAction: (state, action) => {
-      //console.log(action.payload);
       const { increment, index } = action.payload;
       let copyArray = [...state.cart];
 
-      copyArray[index].cartTotal += copyArray[index].price * increment;
+      copyArray[index].cartTotal = roundToTwoDecimals(
+        copyArray[index].cartTotal + copyArray[index].price * increment
+      );
 
       state.totalPrice = subTotal(copyArray);
 
@@ -75,12 +86,6 @@ const cartSlice = createSlice({
     },
   },
 });
-
-function subTotal(arrayCart) {
-  return arrayCart.reduce((acc, current) => {
-    return acc + current.cartTotal;
-  }, 0);
-}
 
 export const { saveInCartAction, deleteItemCartAction, setPriceHandlerAction } =
   cartSlice.actions;
